@@ -1,0 +1,11 @@
+[package]
+name = "cargo-wheel"
+version = "0.1.0"
+authors = ["Markus Klein <markus-klein@live.de>"]
+publish = false
+license = "MIT"
+
+[dependencies]
+cargo = "0.30"
+env_logger = "0.5"
+structopt = "0.2"
