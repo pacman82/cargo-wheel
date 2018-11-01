@@ -25,7 +25,6 @@ class RustBuildCommand(build_py):
 class BinaryDistribution(Distribution):
     '''
     A hack to override wheel's autodetection for binary content.
-    -> fixes py27 and platform
     '''
     def has_ext_modules(self):
         return True

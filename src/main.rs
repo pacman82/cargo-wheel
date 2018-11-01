@@ -1,6 +1,5 @@
 extern crate cargo;
 extern crate env_logger;
-#[macro_use]
 extern crate structopt;
 
 mod setup_py;
