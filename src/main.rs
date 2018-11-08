@@ -1,16 +1,23 @@
 extern crate cargo;
+extern crate cbindgen;
 extern crate env_logger;
+extern crate mustache;
+extern crate pathdiff;
+extern crate serde;
+extern crate serde_derive;
 extern crate structopt;
 
-mod setup_py;
+mod header;
+mod templates;
+
 use cargo::{
     core::{shell::Shell, Workspace},
     util::important_paths,
     CliResult, Config,
 };
 use std::{
-    fs::File,
-    io::Write,
+    env::current_dir,
+    fs::create_dir_all,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -93,34 +100,71 @@ fn real_main(args: Args, config: &mut Config) -> CliResult {
     let manifest_path = important_paths::find_root_manifest_for_wd(config.cwd())?;
     let workspace = Workspace::new(&manifest_path, config)?;
     let package = workspace.current()?;
+    let crate_dir = manifest_path
+        .parent()
+        .expect("Expected manifest path to point to a file");
 
-    if !Path::new("setup.py").exists() {
-        let mut file = File::create("setup.py").expect("Unable to create setup.py");
-        file.write_all(
-            setup_py::render_with(
-                &package.name(),
-                &package.version().to_string(),
-                "url",
-                "authors",
-                "description",
-            ).as_bytes(),
-        ).expect("Unable to write setup.py");
+    let setup_py_dir = Path::new(".");
+    let absolute_setup_py_dir = current_dir()
+        .expect("Error determining working directory")
+        .join(setup_py_dir);
+    let relative_crate_dir = pathdiff::diff_paths(crate_dir, &absolute_setup_py_dir)
+        .expect("Could not determine crate directory relative to directory containing setup.py");
+    let relative_crate_dir = if relative_crate_dir == Path::new("") {
+        PathBuf::from(".")
+    } else {
+        relative_crate_dir
+    };
+    let setup_py_path = setup_py_dir.join("setup.py");
+    let py_package_name = &package.name().replace("-", "_");
+    let py_package_dir = setup_py_dir.join(&py_package_name);
+    let c_dylib_name = package
+        .targets()
+        .iter()
+        .find(|t| t.is_cdylib())
+        .expect(
+            "No dynamic C-Library found in targets. Do you miss:\
+             \n\
+             \n[lib]\
+             \ncrate-type = [\"cdylib\"]\
+             \n\
+             \nin your Cargo.toml?",
+        ).crate_name();
+
+    println!("Generate C Header file");
+    header::generate_c_bindings(&crate_dir, &py_package_name);
+
+    if !setup_py_path.exists() {
+        templates::render_setup_py(
+            &setup_py_path,
+            &py_package_name,
+            &c_dylib_name,
+            &package.version().to_string(),
+            "url",
+            "authors",
+            "description",
+            relative_crate_dir
+                .to_str()
+                .expect("Crate path contains invalid unicode characters."),
+        );
     }
 
-    let out = Command::new("python")
+    // Assert python package direcotry
+    create_dir_all(&py_package_dir).expect("Error creating python package directory");
+    // Assert existing __init__.py
+    let init_py_path = py_package_dir.join("__init__.py");
+    if !init_py_path.exists() {
+        templates::render_init_py(&init_py_path, &py_package_name);
+    }
+
+    println!("python setup.py bdist_wheel");
+    let exit_code = Command::new("python")
         .arg("setup.py")
         .arg("bdist_wheel")
-        .output()
-        .expect("Error executing python setup.py bdist_wheel");
+        .status()
+        .expect("Error executing 'python setup.py bdist_wheel'");
 
-    println!(
-        "bdist_wheel stdout:\n{}",
-        String::from_utf8_lossy(&out.stdout)
-    );
-    println!(
-        "bdist_wheel stderr:\n{}",
-        String::from_utf8_lossy(&out.stderr)
-    );
+    println!("'python setup.py bdist_wheel' finished: {}", exit_code);
 
     Ok(())
 }

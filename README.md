@@ -1,3 +1,3 @@
 # cargo-wheel
 
-Package executables build with cargo as python wheels
+Build python wheels interfacing with rust code via C-Interface.
