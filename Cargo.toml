@@ -3,6 +3,8 @@ name = "cargo-wheel"
 version = "0.1.0"
 authors = ["Markus Klein <markus-klein@live.de>"]
 license = "MIT"
+description = "Use milksnake and cbindgen to generate python binding to your Rust crate."
+repository = "https://github.com/pacman82/cargo-wheel.git"
 
 [dependencies]
 cargo = "0.30"
