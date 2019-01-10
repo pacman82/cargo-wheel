@@ -1,12 +1,3 @@
-extern crate cargo;
-extern crate cbindgen;
-extern crate env_logger;
-extern crate mustache;
-extern crate pathdiff;
-extern crate serde;
-extern crate serde_derive;
-extern crate structopt;
-
 mod header;
 mod templates;
 
