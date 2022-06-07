@@ -5,6 +5,7 @@ Changelog
 -----
 
 * Update dependencies
+* Use edition 2021
 
 0.2.0
 -----
