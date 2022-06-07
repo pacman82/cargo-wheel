@@ -14,6 +14,8 @@ use std::{
 };
 use structopt::{clap::AppSettings, StructOpt};
 
+use crate::templates::SetupPyVars;
+
 #[derive(StructOpt)]
 #[structopt(bin_name = "cargo")]
 enum Opts {
@@ -30,11 +32,7 @@ enum Opts {
 #[derive(StructOpt)]
 struct Args {
     /// Directory for all generated artifacts
-    #[structopt(
-        long = "target-dir",
-        value_name = "DIRECTORY",
-        parse(from_os_str)
-    )]
+    #[structopt(long = "target-dir", value_name = "DIRECTORY", parse(from_os_str))]
     target_dir: Option<PathBuf>,
     #[structopt(long, short = "v", parse(from_occurrences))]
     /// Use verbose output (-vv very verbose/build.rs output)
@@ -79,7 +77,6 @@ fn main() {
 }
 
 fn real_main(args: Args, config: &mut Config) -> CliResult {
-
     let cli_config = [];
 
     config.configure(
@@ -126,17 +123,18 @@ fn real_main(args: Args, config: &mut Config) -> CliResult {
              \ncrate-type = [\"cdylib\"]\
              \n\
              \nin your Cargo.toml?",
-        ).crate_name();
+        )
+        .crate_name();
 
     println!("Generate C Header file");
     header::generate_c_bindings(crate_dir, py_package_name);
 
     if !setup_py_path.exists() {
-        templates::render_setup_py(
-            &setup_py_path,
+        let version = package.version().to_string();
+        let setup_py_vars = SetupPyVars::new(
             py_package_name,
             &c_dylib_name,
-            &package.version().to_string(),
+            &version,
             "url",
             "authors",
             "description",
@@ -144,6 +142,7 @@ fn real_main(args: Args, config: &mut Config) -> CliResult {
                 .to_str()
                 .expect("Crate path contains invalid unicode characters."),
         );
+        templates::render_setup_py(&setup_py_path, setup_py_vars);
     }
 
     // Assert python package direcotry
