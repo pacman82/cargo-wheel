@@ -1,4 +1,3 @@
-use mustache;
 use serde_derive::Serialize;
 use std::{fs::File, path::Path};
 

@@ -19,11 +19,9 @@ use structopt::{clap::AppSettings, StructOpt};
 enum Opts {
     #[structopt(
         name = "wheel",
-        raw(
-            setting = "AppSettings::UnifiedHelpMessage",
-            setting = "AppSettings::DeriveDisplayOrder",
-            setting = "AppSettings::DontCollapseArgsInUsage"
-        )
+        setting = AppSettings::UnifiedHelpMessage,
+        setting = AppSettings::DeriveDisplayOrder,
+        setting = AppSettings::DontCollapseArgsInUsage
     )]
     /// Package executable as a python wheel
     Wheel(Args),
@@ -38,21 +36,24 @@ struct Args {
         parse(from_os_str)
     )]
     target_dir: Option<PathBuf>,
-    #[structopt(long = "verbose", short = "v", parse(from_occurrences))]
+    #[structopt(long, short = "v", parse(from_occurrences))]
     /// Use verbose output (-vv very verbose/build.rs output)
     verbose: u32,
-    #[structopt(long = "quiet", short = "q")]
+    #[structopt(long, short = "q")]
     /// No output printed to stdout other than the tree
-    quiet: Option<bool>,
-    #[structopt(long = "color", value_name = "WHEN")]
+    quiet: bool,
+    #[structopt(long, value_name = "WHEN")]
     /// Coloring: auto, always, never
     color: Option<String>,
-    #[structopt(long = "frozen")]
+    #[structopt(long)]
     /// Require Cargo.lock and cache are up to date
     frozen: bool,
-    #[structopt(long = "locked")]
+    #[structopt(long)]
     /// Require Cargo.lock is up to date
     locked: bool,
+    /// Run without accessing the network
+    #[structopt(long)]
+    offline: bool,
     #[structopt(short = "Z", value_name = "FLAG")]
     /// Unstable (nightly-only) flags to Cargo
     unstable_flags: Vec<String>,
@@ -71,21 +72,26 @@ fn main() {
 
     let Opts::Wheel(args) = Opts::from_args();
 
-    if let Err(e) = real_main(args, &mut config) {
+    if let Err(err) = real_main(args, &mut config) {
         let mut shell = Shell::new();
-        cargo::exit_with_error(e.into(), &mut shell)
+        cargo::exit_with_error(err, &mut shell)
     }
 }
 
 fn real_main(args: Args, config: &mut Config) -> CliResult {
+
+    let cli_config = [];
+
     config.configure(
         args.verbose,
         args.quiet,
-        &args.color,
+        args.color.as_deref(),
         args.frozen,
         args.locked,
+        args.offline,
         &args.target_dir,
         &args.unstable_flags,
+        &cli_config,
     )?;
 
     let manifest_path = important_paths::find_root_manifest_for_wd(config.cwd())?;
@@ -107,7 +113,7 @@ fn real_main(args: Args, config: &mut Config) -> CliResult {
         relative_crate_dir
     };
     let setup_py_path = setup_py_dir.join("setup.py");
-    let py_package_name = &package.name().replace("-", "_");
+    let py_package_name = &package.name().replace('-', "_");
     let py_package_dir = setup_py_dir.join(&py_package_name);
     let c_dylib_name = package
         .targets()
@@ -123,12 +129,12 @@ fn real_main(args: Args, config: &mut Config) -> CliResult {
         ).crate_name();
 
     println!("Generate C Header file");
-    header::generate_c_bindings(&crate_dir, &py_package_name);
+    header::generate_c_bindings(crate_dir, py_package_name);
 
     if !setup_py_path.exists() {
         templates::render_setup_py(
             &setup_py_path,
-            &py_package_name,
+            py_package_name,
             &c_dylib_name,
             &package.version().to_string(),
             "url",
@@ -145,7 +151,7 @@ fn real_main(args: Args, config: &mut Config) -> CliResult {
     // Assert existing __init__.py
     let init_py_path = py_package_dir.join("__init__.py");
     if !init_py_path.exists() {
-        templates::render_init_py(&init_py_path, &py_package_name);
+        templates::render_init_py(&init_py_path, py_package_name);
     }
 
     println!("python setup.py bdist_wheel");

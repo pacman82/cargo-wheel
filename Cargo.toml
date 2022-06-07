@@ -1,18 +1,18 @@
 [package]
 name = "cargo-wheel"
-version = "0.2.0"
-authors = ["Markus Klein <markus-klein@live.de>"]
+version = "0.2.1"
+authors = ["Markus Klein"]
 license = "MIT"
 description = "Use milksnake and cbindgen to generate python binding to your Rust crate."
 repository = "https://github.com/pacman82/cargo-wheel.git"
 edition = "2018"
 
 [dependencies]
-cargo = "0.32"
-env_logger = "0.6"
-structopt = "0.2"
-cbindgen = "0.6"
-mustache = "0.9"
-serde = "1.0"
-serde_derive = "1.0"
-pathdiff = "0.1"
+cargo = "0.62.0" # cargo v0.32
+env_logger = "0.9.0"
+structopt = "0.3.26"
+cbindgen = "0.24.1"
+mustache = "0.9.0"
+serde = "1.0.137"
+serde_derive = "1.0.137"
+pathdiff = "0.2.1"
