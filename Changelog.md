@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.2.2
+-----
+
+No changes, just document that this is deprecated
+
 0.2.1
 -----
 

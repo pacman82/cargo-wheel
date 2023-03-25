@@ -1,6 +1,12 @@
 # cargo-wheel
 
+## About
+
 Use milksnake and cbindgen to generate python binding to your Rust crate.
+
+**Deprecated**
+
+milksnake has not seen many updates in the last year and seems to have been replaced by maturin. I would not recommend using this crate anymore.
 
 ## Quick start
 
