@@ -17,6 +17,7 @@ serde = "1.0.137"
 serde_derive = "1.0.137"
 pathdiff = "0.2.1"
 
+[badges]
 # The `maintenance` table indicates the status of the maintenance of
 # the crate. This may be used by a registry, but is currently not
 # used by crates.io. See https://github.com/rust-lang/crates.io/issues/2437
